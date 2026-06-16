@@ -41,6 +41,32 @@ const TextEditor = (() => {
       }
     });
 
+    // Bind mobile position controls (Up / Down arrows)
+    const btnMoveUp = document.getElementById('btn-move-up');
+    const btnMoveDown = document.getElementById('btn-move-down');
+
+    if (btnMoveUp) {
+      btnMoveUp.addEventListener('click', () => {
+        const layer = CanvasEngine.getTextLayer('name');
+        if (layer) {
+          layer.y = Utils.clamp(layer.y - 0.01, 0, 1);
+          CanvasEngine.setTextLayer(layer);
+          pushHistory();
+        }
+      });
+    }
+
+    if (btnMoveDown) {
+      btnMoveDown.addEventListener('click', () => {
+        const layer = CanvasEngine.getTextLayer('name');
+        if (layer) {
+          layer.y = Utils.clamp(layer.y + 0.01, 0, 1);
+          CanvasEngine.setTextLayer(layer);
+          pushHistory();
+        }
+      });
+    }
+
     // Certificate type selector
     const typeSelect = document.getElementById('cert-type');
     if (typeSelect) {
