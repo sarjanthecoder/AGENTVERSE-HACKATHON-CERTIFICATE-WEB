@@ -589,7 +589,12 @@ const CanvasEngine = (() => {
         lx -= halfW;
       }
 
-      if (Math.abs(rx - lx) < halfW + 0.02 && Math.abs(ry - ly) < halfH + 0.02) {
+      // Calculate touch padding (at least 24 CSS pixels, fallback/minimum 2% of canvas size)
+      const scaleTotal = displayScale * zoom;
+      const padX = scaleTotal > 0 ? Math.max(0.02, 24 / (scaleTotal * bgNaturalW)) : 0.02;
+      const padY = scaleTotal > 0 ? Math.max(0.02, 24 / (scaleTotal * bgNaturalH)) : 0.02;
+
+      if (Math.abs(rx - lx) < halfW + padX && Math.abs(ry - ly) < halfH + padY) {
         return layer.id;
       }
     }
@@ -688,7 +693,9 @@ const CanvasEngine = (() => {
 
   function onTouchMove(e) {
     if (e.touches.length === 1 && isDragging) {
-      e.preventDefault();
+      if (e.cancelable) {
+        e.preventDefault();
+      }
       const touch = e.touches[0];
       onMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
     }
