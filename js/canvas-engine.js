@@ -28,6 +28,7 @@ const CanvasEngine = (() => {
   let qrCodeImageCache = null;
   let qrCodeImageLoading = false;
   let lastCertIdForQr = null;
+  let debouncedPrepareQr = null;
 
   /* ── Callbacks ── */
   let onLayerSelect = null;
@@ -51,6 +52,15 @@ const CanvasEngine = (() => {
 
     // Set up mouse/touch interaction for drag
     setupInteraction();
+
+    // Initialize debounced helper for QR generation
+    debouncedPrepareQr = Utils.debounce((text) => {
+      prepareQrCode(text).then(() => {
+        render();
+      }).catch(err => {
+        console.warn('Failed to prepare QR code for live preview:', err);
+      });
+    }, 250);
   }
 
   /* ── Background ── */
@@ -151,11 +161,15 @@ const CanvasEngine = (() => {
 
     // Live preview QR preparation
     if (config.id === 'certId' && config.text) {
-      prepareQrCode(config.text).then(() => {
-        render();
-      }).catch(err => {
-        console.warn('Failed to prepare QR code for live preview:', err);
-      });
+      if (debouncedPrepareQr) {
+        debouncedPrepareQr(config.text);
+      } else {
+        prepareQrCode(config.text).then(() => {
+          render();
+        }).catch(err => {
+          console.warn('Failed to prepare QR code for live preview:', err);
+        });
+      }
     }
 
     render();
@@ -483,13 +497,18 @@ const CanvasEngine = (() => {
     if (typeof VerificationManager !== 'undefined' && VerificationManager.generateQRCodeImage) {
       return VerificationManager.generateQRCodeImage(qrUrl)
         .then(img => {
-          qrCodeImageCache = img;
-          qrCodeImageLoading = false;
+          // Only update cache if this matches the latest requested cert ID
+          if (lastCertIdForQr === certId) {
+            qrCodeImageCache = img;
+            qrCodeImageLoading = false;
+          }
           return img;
         })
         .catch(err => {
           console.error('Failed to generate QR Code image:', err);
-          qrCodeImageLoading = false;
+          if (lastCertIdForQr === certId) {
+            qrCodeImageLoading = false;
+          }
           throw err;
         });
     } else {
@@ -572,7 +591,8 @@ const CanvasEngine = (() => {
     // Hit test in reverse order (top layer first)
     for (let i = textLayers.length - 1; i >= 0; i--) {
       const layer = textLayers[i];
-      if (!layer.visible || !layer.text) continue;
+      // Skip certId (QR code) layer to make it stationary and non-selectable/non-draggable
+      if (!layer.visible || !layer.text || layer.id === 'certId') continue;
 
       // Approximate bounding box
       const metrics = measureTextLayer(layer);
@@ -656,6 +676,9 @@ const CanvasEngine = (() => {
 
     const layer = textLayers.find(l => l.id === dragLayerId);
     if (layer) {
+      if (layer.id === 'certId') {
+        return; // Fixed place, do not move the QR code
+      }
       if (layer.id === 'name') {
         layer.x = 0.5; // Always center the name
       } else {

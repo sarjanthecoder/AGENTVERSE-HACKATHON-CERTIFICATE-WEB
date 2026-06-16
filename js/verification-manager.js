@@ -40,7 +40,11 @@ const VerificationManager = (() => {
   function generateQRCodeImage(text) {
     return new Promise((resolve, reject) => {
       const tempDiv = document.createElement('div');
-      tempDiv.style.display = 'none';
+      // Render offscreen instead of display: none to satisfy mobile layout trees
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '-9999px';
+      tempDiv.style.visibility = 'hidden';
       document.body.appendChild(tempDiv);
 
       try {
@@ -54,29 +58,51 @@ const VerificationManager = (() => {
           correctLevel: QRCode.CorrectLevel.H
         });
 
-        // Poll until the Image source gets populated
+        // 1. Try to extract synchronously from canvas if generated immediately
+        const canvas = tempDiv.querySelector('canvas');
+        if (canvas) {
+          try {
+            const img = new Image();
+            img.onload = () => {
+              if (tempDiv.parentNode) document.body.removeChild(tempDiv);
+              resolve(img);
+            };
+            img.onerror = () => {
+              if (tempDiv.parentNode) document.body.removeChild(tempDiv);
+              reject(new Error('Failed to load QR Image from canvas'));
+            };
+            img.src = canvas.toDataURL('image/png');
+            return;
+          } catch (canvasErr) {
+            console.warn('Synchronous canvas extraction failed, falling back to polling:', canvasErr);
+          }
+        }
+
+        // 2. Fallback: Poll for the img tag (e.g. if canvas not ready or not supported)
+        let attempts = 0;
         const checkInterval = setInterval(() => {
+          attempts++;
           const img = tempDiv.querySelector('img');
-          if (img && img.src && img.complete) {
+          if (img && img.src && (img.complete || img.naturalWidth > 0)) {
             clearInterval(checkInterval);
             
             const loadedImg = new Image();
-            loadedImg.crossOrigin = 'anonymous';
+            // Do NOT use crossOrigin = 'anonymous' for base64 data URIs on mobile
             loadedImg.onload = () => {
-              document.body.removeChild(tempDiv);
+              if (tempDiv.parentNode) document.body.removeChild(tempDiv);
               resolve(loadedImg);
             };
-            loadedImg.onerror = () => reject(new Error('Failed to load generated QR Image'));
+            loadedImg.onerror = () => {
+              if (tempDiv.parentNode) document.body.removeChild(tempDiv);
+              reject(new Error('Failed to load generated QR Image'));
+            };
             loadedImg.src = img.src;
+          } else if (attempts > 100) { // 5 seconds
+            clearInterval(checkInterval);
+            if (tempDiv.parentNode) document.body.removeChild(tempDiv);
+            reject(new Error('QR Code generation timed out'));
           }
         }, 50);
-
-        // Timeout fallback
-        setTimeout(() => {
-          clearInterval(checkInterval);
-          if (tempDiv.parentNode) document.body.removeChild(tempDiv);
-          reject(new Error('QR Code generation timed out'));
-        }, 5000);
 
       } catch (err) {
         if (tempDiv.parentNode) document.body.removeChild(tempDiv);
