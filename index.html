@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI Certificate Generator — Create stunning, high-quality certificates with live preview, drag-and-drop editing, bulk generation, and premium export.">
+  <meta property="og:title" content="AI Certificate Generator">
+  <meta property="og:description" content="Create stunning certificates with live preview and bulk export.">
+  <title>AI Certificate Generator — Premium Certificate Creator</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/canvas.css">
+
+  <!-- Favicon (inline SVG as data URI) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+</head>
+
+<body>
+  <div class="app" id="app">
+
+    <!-- ═══════════════════════════════════════════════════════
+         HEADER
+         ═══════════════════════════════════════════════════════ -->
+    <header class="app-header">
+      <div class="app-brand">
+        <div class="app-logo">🎓</div>
+        <div>
+          <div class="app-title">DEVPOST AGENTVERSE CERTIFICATE</div>
+          <div class="app-subtitle">Premium Certificate Generator</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-icon btn-ghost" id="btn-undo" data-tooltip="Undo (Ctrl+Z)" disabled>↩</button>
+        <button class="btn btn-icon btn-ghost" id="btn-redo" data-tooltip="Redo (Ctrl+Y)" disabled>↪</button>
+        <input type="file" id="config-file" accept=".json" style="display:none;">
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════
+         MAIN CONTENT
+         ═══════════════════════════════════════════════════════ -->
+    <main class="app-main">
+
+      <!-- ─── SIDEBAR PANEL ─── -->
+      <aside class="sidebar" id="sidebar">
+
+        <!-- Hidden template inputs kept for JS compatibility -->
+        <input type="file" id="template-file" accept="image/png,image/jpeg,image/jpg,image/webp" style="display:none;">
+        <div id="template-dropzone" style="display:none;"></div>
+        <img id="template-thumb" style="display:none;" alt="">
+
+        <!-- Section: Certificate Type -->
+        <div class="section-card glass-panel" id="section-cert-type">
+          <div class="section-header">
+            <h2 class="section-title"><span class="icon">🏆</span> Certificate Type</h2>
+            <span class="chevron">▼</span>
+          </div>
+          <div class="section-body">
+            <div class="form-group">
+              <select class="form-select" id="cert-type">
+                <option value="participant">🎯 Participant</option>
+                <option value="1st_prize">🥇 1st Prize — Winner</option>
+                <option value="2nd_prize">🥈 2nd Prize — Runner-Up</option>
+                <option value="3rd_prize">🥉 3rd Prize — Third Place</option>
+                <option value="judge">⚖️ Judge</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Text Editor -->
+        <div class="section-card glass-panel" id="section-text">
+          <div class="section-header">
+            <h2 class="section-title"><span class="icon">✏️</span> Text Overlay</h2>
+            <span class="chevron">▼</span>
+          </div>
+          <div class="section-body">
+            <!-- Name only -->
+            <div class="form-group layer-input-group" id="layer-group-name">
+              <label class="form-label">Participant Name</label>
+              <input type="text" class="form-input" id="input-name" placeholder="Enter full name..." autocomplete="off">
+            </div>
+
+            <!-- Hidden fields kept for canvas engine & QR pipeline compatibility -->
+            <input type="hidden" id="input-role">
+            <input type="hidden" id="input-event">
+            <input type="hidden" id="input-certId">
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- ─── PREVIEW AREA ─── -->
+      <section class="preview-area" id="preview-area">
+
+        <!-- Preview Toolbar -->
+        <div class="preview-toolbar">
+          <div class="toolbar-left">
+            <span class="canvas-info" id="canvas-info">No template loaded</span>
+          </div>
+          <div class="toolbar-center">
+            <div class="zoom-controls">
+              <button class="btn btn-icon btn-ghost" id="btn-zoom-out" data-tooltip="Zoom Out">−</button>
+              <span class="zoom-display" id="zoom-display">100%</span>
+              <button class="btn btn-icon btn-ghost" id="btn-zoom-in" data-tooltip="Zoom In">+</button>
+              <button class="btn btn-icon btn-ghost" id="btn-zoom-fit" data-tooltip="Fit to View">⊞</button>
+            </div>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn btn-icon btn-ghost" id="btn-grid" data-tooltip="Toggle Grid">⊞</button>
+          </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="canvas-container" id="canvas-container">
+          <!-- Empty State -->
+          <div class="canvas-empty" id="canvas-empty">
+            <div class="canvas-empty-icon">🎨</div>
+            <div class="canvas-empty-text">Upload a certificate template to begin</div>
+            <div class="canvas-empty-hint">Drag & drop or use the sidebar panel</div>
+          </div>
+
+          <!-- Canvas Wrapper (hidden initially) -->
+          <div class="canvas-wrapper" id="canvas-wrapper" style="display:none;">
+            <canvas id="certificate-canvas"></canvas>
+            <div class="interaction-layer" id="interaction-layer"></div>
+            <div class="grid-overlay" id="grid-overlay"></div>
+          </div>
+        </div>
+
+        <!-- Export Bar -->
+        <div class="export-bar">
+          <div class="export-info">
+            <div class="form-group" style="margin:0;min-width:140px;">
+              <select class="form-select" id="export-quality" style="padding:var(--sp-1) var(--sp-3);font-size:var(--fs-xs);">
+                <option value="standard">Standard (2×)</option>
+                <option value="high" selected>High (4×)</option>
+                <option value="ultra">Ultra HD (8×)</option>
+              </select>
+            </div>
+            <span style="font-size:var(--fs-xs);color:var(--clr-text-muted);">300 DPI</span>
+          </div>
+          <div class="export-actions">
+            <button class="btn btn-primary btn-sm" id="btn-export-png">
+              🖼️ Download PNG
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-export-pdf" style="background:linear-gradient(135deg,#ef4444,#f97316);">
+              📄 Download PDF
+            </button>
+          </div>
+        </div>
+
+      </section>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════
+         FOOTER
+         ═══════════════════════════════════════════════════════ -->
+    <footer class="app-footer">
+      Built with ❤️ — Devpost Agentverse Certificate &nbsp;|&nbsp; © 2026
+    </footer>
+
+  </div>
+
+  <!-- Landing Overlay -->
+  <div id="landing-page" class="landing-overlay">
+    <!-- Premium Header -->
+    <header class="landing-header">
+      <div class="landing-brand">
+        <span class="landing-brand-logo">🎓</span>
+        <span class="landing-brand-name">AGENTVERSE</span>
+      </div>
+      <nav class="landing-nav">
+        <a href="#features" class="landing-nav-link">Features</a>
+        <a href="#security" class="landing-nav-link">Ledger Status</a>
+      </nav>
+      <button id="btn-header-get-started" class="btn btn-secondary btn-sm landing-header-btn">
+        Quick Access
+      </button>
+    </header>
+
+    <!-- Hero Section -->
+    <div class="landing-hero">
+      <div class="hero-badge">
+        <span class="pulse-dot"></span> Official Credential Portal
+      </div>
+      <h1 class="landing-title">DEVPOST AGENTVERSE CERTIFICATE</h1>
+      <p class="landing-tagline">Securely generate, customize, and verify your credentials for the Agentverse Hackathon. Access your digital certificates with cryptographic integrity.</p>
+      
+      <div class="landing-hero-actions">
+        <button id="btn-get-started" class="landing-btn">
+          <span>Get Started</span> <span class="arrow">→</span>
+        </button>
+        <button id="btn-verify-shortcut" class="btn btn-secondary landing-secondary-btn">
+          <span>🛡️ Verify Credentials</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Features Section -->
+    <section class="landing-features-section" id="features">
+      <div class="section-divider-title">EXQUISITE FEATURES</div>
+      <div class="landing-features-grid">
+        <div class="landing-feature-card glass-panel">
+          <div class="feature-card-icon">🥇</div>
+          <h3>Prize-Winner Tiers</h3>
+          <p>Access and unlock exclusive 1st, 2nd, and 3rd Prize templates protected by secure passkeys.</p>
+        </div>
+        <div class="landing-feature-card glass-panel">
+          <div class="feature-card-icon">🎯</div>
+          <h3>Custom Editing</h3>
+          <p>Interactive canvas layers, real-time font rendering, drag-and-drop adjustments, and ultra-high-definition export capabilities.</p>
+        </div>
+        <div class="landing-feature-card glass-panel">
+          <div class="feature-card-icon">🛡️</div>
+          <h3>Verifiable Ledger</h3>
+          <p>Embedded dynamic QR codes linked directly to our centralized verification database for instant proof of authenticity.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Landing Footer -->
+    <footer class="landing-footer" id="security">
+      <div class="footer-left">
+        <span>Built for Devpost Agentverse Hackathon</span>
+      </div>
+      <div class="footer-center">
+        <span class="system-status"><span class="status-indicator"></span> All Systems Operational</span>
+      </div>
+      <div class="footer-right">
+        <span>© 2026 Agentverse. All Rights Reserved.</span>
+      </div>
+    </footer>
+    
+    <!-- Floating Background Orbs -->
+    <div class="floating-bg">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+      <div class="orb orb-4"></div>
+    </div>
+  </div>
+
+  <!-- Email Verification Overlay (Startup Auth) -->
+  <div id="email-verification-overlay" class="modal-overlay">
+    <div class="modal-card glass-panel auth-card">
+      <div class="modal-header">
+        <div class="modal-logo">🛡️</div>
+        <h2 class="modal-title">Authentication Required</h2>
+        <p class="modal-subtitle">Please enter your registered hackathon email to access and download your certificates.</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="auth-email">Registered Email Address</label>
+          <input type="email" id="auth-email" class="form-input" placeholder="e.g., yourname@domain.com" autocomplete="email" required>
+          <div id="auth-error-msg" class="error-text" style="display: none;">Email not found. Please verify and try again.</div>
+        </div>
+        <button id="btn-verify-email" class="btn btn-primary btn-block">Verify Email</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Verification Modal (Prize Lock) -->
+  <div id="password-verification-modal" class="modal-overlay">
+    <div class="modal-card glass-panel auth-card">
+      <div class="modal-header">
+        <div class="modal-logo">🔑</div>
+        <h2 class="modal-title" id="password-modal-title">Password Required</h2>
+        <p class="modal-subtitle">Entering this certificate class requires a password. Please enter the password below.</p>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="cert-password">Certificate Password</label>
+          <input type="password" id="cert-password" class="form-input" placeholder="Enter password..." autocomplete="off">
+          <div id="password-error-msg" class="error-text" style="display: none;">Incorrect password. Please try again.</div>
+        </div>
+        <div style="display: flex; gap: var(--sp-2);">
+          <button id="btn-cancel-password" class="btn btn-secondary" style="flex: 1;">Cancel</button>
+          <button id="btn-verify-password" class="btn btn-primary" style="flex: 2;">Unlock</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- jsPDF for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous"></script>
+  <!-- Fallback: if cdnjs fails, load from unpkg -->
+  <script>
+    if (!window.jspdf) {
+      var s = document.createElement('script');
+      s.src = 'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js';
+      document.head.appendChild(s);
+    }
+  </script>
+  <!-- JSZip for bulk ZIP download -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <!-- QRCode.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
+
+  <!-- Application Scripts (order matters) -->
+  <script src="js/utils.js?v=1.2"></script>
+  <script src="js/config.js?v=1.2"></script>
+  <script src="js/db.js"></script>
+  <script src="js/history-manager.js?v=1.2"></script>
+  <script src="js/ui-controller.js?v=1.2"></script>
+  <script src="js/canvas-engine.js?v=1.2"></script>
+  <script src="js/template-manager.js?v=1.2"></script>
+  <script src="js/text-editor.js?v=1.2"></script>
+  <script src="js/bulk-generator.js?v=1.2"></script>
+  <script src="js/export-manager.js?v=1.2"></script>
+  <script src="js/verification-manager.js?v=1.2"></script>
+  <script src="js/app.js?v=1.2"></script>
+
+  <!-- Extra inline styles for layer-input highlighting -->
+  <style>
+    .layer-input-group {
+      transition: all var(--dur-normal) var(--ease-out);
+      padding: var(--sp-2) var(--sp-3);
+      margin: 0 calc(-1 * var(--sp-3));
+      border-radius: var(--radius-md);
+      border-left: 3px solid transparent;
+    }
+
+    .layer-input-group.active-layer {
+      background: rgba(124, 58, 237, 0.08);
+      border-left-color: var(--clr-primary-500);
+    }
+
+    .layer-input-group .form-label {
+      transition: color var(--dur-fast) var(--ease-out);
+    }
+
+    .layer-input-group.active-layer .form-label {
+      color: var(--clr-primary-300);
+    }
+
+    /* Alignment button active state */
+    #align-left.active,
+    #align-center.active,
+    #align-right.active {
+      background: var(--grad-primary) !important;
+      color: #fff !important;
+      border-color: transparent !important;
+    }
+
+    /* Disabled buttons */
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    /* Grid button active */
+    #btn-grid.active {
+      color: var(--clr-primary-400);
+      background: rgba(124,58,237,0.15);
+    }
+  </style>
+</body>
+</html>

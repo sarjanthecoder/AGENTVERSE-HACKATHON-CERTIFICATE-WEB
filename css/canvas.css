@@ -1,0 +1,155 @@
+/* ============================================================
+   AI Certificate Generator — Canvas / Preview Styles
+   ============================================================ */
+
+/* ── Canvas Empty State ── */
+.canvas-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  width: 600px;
+  height: 400px;
+  border: 2px dashed rgba(124,58,237,0.2);
+  border-radius: var(--radius-xl);
+  background: rgba(124,58,237,0.02);
+  animation: borderGlow 4s ease-in-out infinite;
+}
+
+.canvas-empty-icon {
+  font-size: 4rem;
+  opacity: 0.4;
+  animation: float 3s ease-in-out infinite;
+}
+
+.canvas-empty-text {
+  font-size: var(--fs-md);
+  color: var(--clr-text-muted);
+  text-align: center;
+}
+
+.canvas-empty-hint {
+  font-size: var(--fs-sm);
+  color: var(--clr-text-muted);
+  opacity: 0.6;
+}
+
+/* ── Selected Layer Indicator ── */
+.layer-indicator {
+  position: absolute;
+  bottom: var(--sp-3);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--sp-1) var(--sp-4);
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  font-size: var(--fs-xs);
+  color: var(--clr-text-secondary);
+  z-index: 3;
+  opacity: 0;
+  transition: opacity var(--dur-normal) var(--ease-out);
+  pointer-events: none;
+}
+
+.layer-indicator.visible {
+  opacity: 1;
+}
+
+/* ── Canvas Crosshair (when dragging) ── */
+.canvas-wrapper.dragging {
+  cursor: grabbing !important;
+}
+
+.canvas-wrapper.dragging .interaction-layer {
+  cursor: grabbing !important;
+}
+
+/* ── Snap Guides ── */
+.snap-guide {
+  position: absolute;
+  background: var(--clr-cyan-400);
+  z-index: 3;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.snap-guide.horizontal {
+  height: 1px;
+  left: 0;
+  right: 0;
+}
+
+.snap-guide.vertical {
+  width: 1px;
+  top: 0;
+  bottom: 0;
+}
+
+/* ── Grid Overlay ── */
+.grid-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity var(--dur-normal) var(--ease-out);
+  background-image:
+    linear-gradient(rgba(124,58,237,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124,58,237,0.08) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+.grid-overlay.visible {
+  opacity: 1;
+}
+
+/* ── Zoom Controls Float ── */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.zoom-controls .btn-icon {
+  width: 30px;
+  height: 30px;
+  font-size: var(--fs-sm);
+}
+
+/* ── Canvas Info ── */
+.canvas-info {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--clr-text-muted);
+}
+
+.canvas-info span {
+  color: var(--clr-primary-300);
+}
+
+/* ── Quick Actions Floating Panel ── */
+.quick-actions {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  z-index: 3;
+}
+
+.quick-actions .btn-icon {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+.quick-actions .btn-icon:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
+}
