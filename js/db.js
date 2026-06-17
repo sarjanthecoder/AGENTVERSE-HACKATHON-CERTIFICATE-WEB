@@ -271,9 +271,9 @@ const ParticipantDB = [
     "hasProject": true
   },
   {
-    "name": "Radha Balan",
-    "email": "radhabalan458@gmail.com",
-    "url": "https://devpost.com/radhabalan458",
+    "name": "Yashwant Ponnaganti",
+    "email": "ponnaganti@gmail.com",
+    "url": "https://agentversemcp.devpost.com/submissions/1043378-lendr?_gl=1*z7g5lc*_gcl_au*MTI0OTAxNDY5MS4xNzgwMDI2OTk0*_ga*MTk5ODg2MzgzNC4xNzgwMDI2OTk0*_ga_0YHJK3Y10M*czE3ODE2ODkyMzUkbzE2JGcxJHQxNzgxNjg5MjQ5JGo0NiRsMCRoMA..",
     "hasProject": false
   },
   {
